@@ -1,22 +1,3 @@
-"""
-CNN Mejorado - Clasificación de Lesiones Cutáneas (PH2)
-========================================================
-Basado en la arquitectura CNNMejorado.py original (CIFAR-10).
-Adaptado para el dataset PH2 (3 clases de lesiones dermatológicas).
-
-Clases PH2:
-  nevus_comun   - Nevus Común / Lunar típico (benigno)
-  nevus_atipico - Nevus Atípico / Lunar displásico (benigno, vigilancia)
-  melanoma      - Melanoma (maligno agresivo)
-
-Uso:
-  python CNNMejorado_PH2.py --mode prepare_data
-  python CNNMejorado_PH2.py --mode train --data_dir ./PH2
-  python CNNMejorado_PH2.py --mode train --data_dir ./PH2 --backbone mobilenet
-  python CNNMejorado_PH2.py --mode predict --image lesion.jpg
-  python CNNMejorado_PH2.py --mode interactive
-"""
-
 import os
 import sys
 import argparse
@@ -208,7 +189,6 @@ def build_mobilenetv2_model():
     base.trainable = False
     model = models.Sequential(name="MobileNetV2_PH2")
     model.add(layers.Input(shape=(IMG_SIZE, IMG_SIZE, 3)))
-    model.add(layers.Lambda(tf.keras.applications.mobilenet_v2.preprocess_input))
     model.add(base)
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(64, activation='relu'))
@@ -237,31 +217,12 @@ def train(data_dir, save_path='cnn_mejorado_ph2.weights.h5', backbone='cnn', fin
         print(f"[INFO]   python CNNMejorado_PH2.py --mode prepare_data")
         return
 
-    print("[INFO] Calculando media y std del dataset...")
-    sample_imgs = []
-    for cls in os.listdir(train_dir):
-        cls_dir = os.path.join(train_dir, cls)
-        if os.path.isdir(cls_dir):
-            for fname in list(os.listdir(cls_dir))[:30]:
-                fpath = os.path.join(cls_dir, fname)
-                try:
-                    img = tf.keras.preprocessing.image.load_img(fpath, target_size=(IMG_SIZE, IMG_SIZE))
-                    img_arr = tf.keras.preprocessing.image.img_to_array(img)
-                    sample_imgs.append(img_arr)
-                except:
-                    pass
-    sample_imgs = np.array(sample_imgs) / 255.0
-    mean = sample_imgs.mean(axis=(0, 1, 2))
-    std = sample_imgs.std(axis=(0, 1, 2))
-    std = np.where(std == 0, 1e-6, std)
-    print(f"  mean={mean}, std={std}")
-
-    def preprocess_with_standardization(x):
-        return (x - mean) / std
+    def normalize_fixed(x):
+        return (x - 0.5) / 0.5
 
     train_datagen = ImageDataGenerator(
         rescale=1./255,
-        preprocessing_function=preprocess_with_standardization,
+        preprocessing_function=normalize_fixed,
         rotation_range=30,
         width_shift_range=0.2,
         height_shift_range=0.2,
@@ -274,7 +235,7 @@ def train(data_dir, save_path='cnn_mejorado_ph2.weights.h5', backbone='cnn', fin
 
     test_datagen = ImageDataGenerator(
         rescale=1./255,
-        preprocessing_function=preprocess_with_standardization)
+        preprocessing_function=normalize_fixed)
 
     train_batches = train_datagen.flow_from_directory(
         train_dir, target_size=(IMG_SIZE, IMG_SIZE),
@@ -345,7 +306,7 @@ def train(data_dir, save_path='cnn_mejorado_ph2.weights.h5', backbone='cnn', fin
         history=history, model_name=model_name,
         class_names=CLASS_NAMES, save_prefix='ph2_')
 
-    return model, history, mean, std
+    return model, history
 
 
 def tta_predict(model, image, datagen, n=TTA_N):
@@ -363,7 +324,7 @@ def predict_image(image_path, model_weights='cnn_mejorado_ph2.weights.h5', use_t
         return None, None
 
     if backbone == 'mobilenet':
-        model = build_mobilenetv2_model()
+        model = build_mobilenetv2_model()[0]
     else:
         model = build_cnn_mejorado_model()
     lr_schedule = tf.keras.optimizers.schedules.CosineDecay(
