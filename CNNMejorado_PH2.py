@@ -34,7 +34,6 @@ CLASS_SEVERITY = {
 IMG_SIZE = 64
 BATCH_SIZE = 16
 EPOCHS = 80
-# PATIENCE ya no se usa (EarlyStopping eliminado)
 CLASS_WEIGHTS = {0: 1.0, 1: 1.0, 2: 5.0}
 L2_REG = 1e-4
 TTA_N = 5

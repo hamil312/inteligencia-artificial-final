@@ -40,7 +40,6 @@ CLASS_SEVERITY = {
 IMG_SIZE = 299
 BATCH_SIZE = 16
 EPOCHS = 50
-# PATIENCE ya no se usa (EarlyStopping eliminado)
 CLASS_WEIGHTS = {0: 1.0, 1: 1.0, 2: 2.0}
 
 PH2_INFO = {
