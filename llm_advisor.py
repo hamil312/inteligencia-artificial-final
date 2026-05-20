@@ -1,15 +1,3 @@
-"""
-Asesor LLM local para orientación sobre lesiones cutáneas.
-Modelo: TinyLlama-1.1B-Chat (~2.2GB en disco, ~2GB RAM/VRAM).
-Alternativas ligeras: Qwen2-0.5B-Instruct (~1GB).
-
-Uso:
-  from llm_advisor import LLMAdvisor
-  advisor = LLMAdvisor()
-  advisor.load()
-  respuesta = advisor.generate(diagnostico, confianza, descripcion, severidad)
-"""
-
 import os
 import re
 import textwrap

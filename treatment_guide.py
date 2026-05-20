@@ -1,10 +1,3 @@
-"""
-Guía de Orientación para Lesiones Cutáneas (PH2)
-=================================================
-Basada en guías clínicas dermatológicas estándar.
-Uso exclusivamente informativo — no sustituye el juicio clínico.
-"""
-
 TREATMENT_GUIDE = {
     'nevus_comun': {
         'nombre': 'Nevus Común / Lunar Típico',

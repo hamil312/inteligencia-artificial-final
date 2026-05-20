@@ -1,9 +1,3 @@
-"""
-Módulo de Métricas para Clasificación de Lesiones Cutáneas
-===========================================================
-Proporciona evaluación completa: matriz de confusión, curvas ROC,
-sensibilidad/especificidad, y gráficas de entrenamiento.
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
