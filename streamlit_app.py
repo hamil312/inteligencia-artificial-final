@@ -8,6 +8,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import io
 
+from treatment_guide import format_guide
+from llm_advisor import LLMAdvisor, ADVISOR_AVAILABLE, MODEL_OPTIONS, format_response
+
 from skin_lesion_assistant import (
     build_irv2_sa_model, SoftAttention, CLASS_NAMES as CLASS_NAMES_IRV2,
     CLASS_DESCRIPTIONS as CLASS_DESC_IRV2, CLASS_SEVERITY as CLASS_SEV_IRV2
@@ -155,6 +158,64 @@ def main():
     for i in np.argsort(predictions)[::-1]:
         c = cfg['class_names'][i]
         st.markdown(f"- {c}: {predictions[i]:.1%}")
+
+    severity_color = {
+        'BAJA (benigno)': '🟢',
+        'MEDIA (benigno con atipia, vigilancia)': '🟡',
+        'ALTA (precanceroso)': '🟠',
+        'CRÍTICA (maligno agresivo)': '🔴',
+    }
+    sev_emoji = severity_color.get(cfg['severity'][cls], '⚪')
+
+    with st.expander(f"{sev_emoji} Guía de orientación — {cls.replace('_', ' ').title()}", expanded=True):
+        st.markdown(format_guide(cfg['class_names'][idx]))
+
+    with st.expander("🤖 Asesor LLM (experimental)", expanded=False):
+        if not ADVISOR_AVAILABLE:
+            st.warning(
+                "Librería `transformers` no encontrada. "
+                "Instálala con: `pip install transformers torch`"
+            )
+        else:
+            if 'llm_loaded' not in st.session_state:
+                st.session_state.llm_loaded = False
+                st.session_state.llm_response = None
+
+            col_llm1, col_llm2 = st.columns([1, 2])
+            with col_llm1:
+                model_choice = st.selectbox(
+                    "Modelo LLM",
+                    options=list(MODEL_OPTIONS.keys()) if ADVISOR_AVAILABLE else [],
+                    key="llm_model_choice"
+                )
+            with col_llm2:
+                if not st.session_state.llm_loaded:
+                    if st.button("🔄 Cargar y consultar LLM"):
+                        with st.spinner(f"Cargando {MODEL_OPTIONS[model_choice]}..."):
+                            try:
+                                advisor = LLMAdvisor(MODEL_OPTIONS[model_choice])
+                                advisor.load()
+                                st.session_state.advisor = advisor
+                                st.session_state.llm_loaded = True
+                            except Exception as e:
+                                st.error(f"Error al cargar LLM: {e}")
+
+            if st.session_state.llm_loaded:
+                st.success(f"LLM cargado en {st.session_state.advisor.device}")
+                if st.button("💬 Consultar al asistente"):
+                    with st.spinner("Generando respuesta..."):
+                        try:
+                            resp = st.session_state.advisor.generate(
+                                cls, conf, cfg['descriptions'][cls], cfg['severity'][cls]
+                            )
+                            st.session_state.llm_response = resp
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+
+                if st.session_state.llm_response:
+                    st.markdown("---")
+                    st.markdown(format_response(st.session_state.llm_response))
+                    st.caption("⚠ Respuesta generada por IA. Verificar con un profesional.")
 
     st.markdown("---")
     with st.expander("ℹ️ Información del modelo", expanded=False):
